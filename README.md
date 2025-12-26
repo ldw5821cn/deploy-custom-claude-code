@@ -1,0 +1,226 @@
+# Deploy Custom Claude Code
+
+A generic deployment script for setting up Claude Code with custom Claude-compatible models (Doubao, GLM, MiniMax, etc.).
+
+## Features
+
+- 🚀 **Easy Deployment**: Deploy custom Claude-compatible models in minutes
+- 🔧 **Generic & Flexible**: Works with any Claude-compatible API
+- 🎯 **Multiple Models**: Deploy multiple models simultaneously (e.g., `claude-doubao`, `claude-glm`, `claude-kimi`)
+- 🐚 **Smart Shell Detection**: Automatically detects and configures your shell (zsh, bash, fish)
+- ✅ **Validation**: Ensures tool names follow `claude-xxx` naming convention
+- 📝 **Interactive & Non-Interactive**: Supports both interactive prompts and command-line arguments
+
+## Quick Start
+
+### Interactive Mode (Recommended for first-time use)
+
+```bash
+./deploy-claude-custom.sh
+```
+
+The script will prompt you for:
+- Tool name (e.g., `doubao`, `glm-4` - will become `claude-doubao`, `claude-glm-4`)
+- API Key
+- Base URL
+- Model name
+- Timeout (optional)
+
+### Non-Interactive Mode
+
+```bash
+./deploy-claude-custom.sh \
+  --tool-name claude-doubao \
+  --api-key YOUR_API_KEY \
+  --base-url https://ark.cn-beijing.volces.com/api/coding \
+  --model doubao-seed-code-preview-latest
+```
+
+### Using Short Flags
+
+```bash
+./deploy-claude-custom.sh -t claude-glm -k KEY -u URL -m glm-4-6
+```
+
+## Common Model Configurations
+
+### Doubao-Seed-Code
+
+```bash
+./deploy-claude-custom.sh \
+  --tool-name doubao \
+  --api-key YOUR_API_KEY \
+  --base-url https://ark.cn-beijing.volces.com/api/coding \
+  --model doubao-seed-code-preview-latest
+```
+
+**Get API Key**: https://console.volcengine.com/ark/region:ark+cn-beijing/apikey
+
+### GLM-4.6
+
+```bash
+./deploy-claude-custom.sh \
+  --tool-name glm \
+  --api-key YOUR_API_KEY \
+  --base-url https://open.bigmodel.cn/api/paas/v4 \
+  --model glm-4-6
+```
+
+**Get API Key**: https://open.bigmodel.cn/usercenter/apikeys
+
+### MiniMax M2
+
+```bash
+./deploy-claude-custom.sh \
+  --tool-name minimax \
+  --api-key YOUR_API_KEY \
+  --base-url https://api.minimax.chat/v1 \
+  --model abab6.5s-chat
+```
+
+**Get API Key**: https://platform.minimax.chat/
+
+## Usage
+
+After deployment, restart your terminal or run:
+
+```bash
+source ~/.zshrc  # or ~/.bashrc, ~/.bash_profile, etc.
+```
+
+Then use your custom tool:
+
+```bash
+claude-doubao --version
+claude-doubao  # Start Claude Code with Doubao model
+```
+
+## Deploying Multiple Models
+
+You can deploy multiple models, each with its own command:
+
+```bash
+# Deploy Doubao
+./deploy-claude-custom.sh -t doubao -k KEY1 -u URL1 -m MODEL1
+
+# Deploy GLM
+./deploy-claude-custom.sh -t glm -k KEY2 -u URL2 -m MODEL2
+
+# Deploy MiniMax
+./deploy-claude-custom.sh -t minimax -k KEY3 -u URL3 -m MODEL3
+```
+
+Each tool will have its own:
+- Command name: `claude-doubao`, `claude-glm`, `claude-minimax`
+- Config directory: `~/.claude-doubao`, `~/.claude-glm`, `~/.claude-minimax`
+- Independent configuration
+
+## Command-Line Options
+
+```
+Options:
+  --tool-name, -t NAME     Name of the tool command (must start with 'claude-')
+                           Examples: claude-doubao, claude-glm, or just doubao/glm
+  --api-key, -k KEY       API Key for the model
+  --base-url, -u URL      Base URL for the API endpoint
+  --model, -m NAME        Model name/identifier
+  --timeout, -T MS        API timeout in milliseconds (default: 3000000)
+  --interactive, -i       Force interactive mode
+  --help, -h              Show this help message
+```
+
+## Environment Variables
+
+You can also use environment variables:
+
+```bash
+TOOL_NAME=claude-glm \
+API_KEY=YOUR_KEY \
+BASE_URL=https://api.example.com/v1 \
+MODEL=glm-4-6 \
+./deploy-claude-custom.sh
+```
+
+## How It Works
+
+1. **Creates Project Structure**: Sets up `~/claude-model/` directory
+2. **Installs Claude Code**: Installs `@anthropic-ai/claude-code` via npm
+3. **Creates Wrapper Script**: Generates a custom wrapper script with your API settings
+4. **Configures PATH**: Automatically adds `~/claude-model/bin` to your PATH
+5. **Shell Detection**: Detects your shell (zsh, bash, fish) and configures the appropriate config file
+
+## Directory Structure
+
+After deployment:
+
+```
+~/claude-model/
+├── bin/
+│   ├── claude-doubao      # Your custom tool
+│   ├── claude-glm         # Another custom tool
+│   └── ...
+├── .claude-doubao/        # Config for claude-doubao
+├── .claude-glm/           # Config for claude-glm
+├── node_modules/
+│   └── @anthropic-ai/
+│       └── claude-code/
+└── package.json
+```
+
+## Requirements
+
+- Node.js and npm (for installing Claude Code)
+- Bash shell
+- Git (for cloning this repository)
+
+## Notes
+
+- The original `claude` command continues to work with Claude Sonnet 4.5
+- Each custom tool has its own isolated configuration
+- Tool names are automatically prefixed with `claude-` if not provided
+- The script supports macOS and Linux
+
+## Troubleshooting
+
+### Command not found after deployment
+
+```bash
+# Reload your shell configuration
+source ~/.zshrc  # or ~/.bashrc, ~/.bash_profile
+
+# Or restart your terminal
+```
+
+### PATH not configured
+
+Check if PATH was added to your shell config:
+
+```bash
+grep "claude-model/bin" ~/.zshrc  # or ~/.bashrc
+```
+
+If not found, manually add:
+
+```bash
+echo 'export PATH="$HOME/claude-model/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+### Script permission denied
+
+```bash
+chmod +x deploy-claude-custom.sh
+```
+
+## License
+
+This script is provided as-is for use with Claude Code and compatible models.
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## References
+
+- [Claude Code Documentation](https://code.claude.com/docs)
+- Based on: [阮一峰的网络日志 - 国产大模型接入 Claude Code 教程](https://www.ruanyifeng.com/blog/2025/11/doubao-seed-code.html)
