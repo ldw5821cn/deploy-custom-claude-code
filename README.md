@@ -13,6 +13,12 @@ A generic deployment script for setting up Claude Code with custom Claude-compat
 
 ## Quick Start
 
+### One-Line Installation
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SSBun/deploy-custom-claude-code/main/deploy-claude-custom.sh -o deploy.sh && bash deploy.sh
+```
+
 ### Interactive Mode (Recommended for first-time use)
 
 ```bash
