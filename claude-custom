@@ -690,8 +690,15 @@ EOF
 
     echo -e "${GREEN}✓ Added $tool_name${NC}"
     echo "  Created ~/.claude-custom/claude → $tool_name"
-    echo "  Add to PATH: export PATH=\"\$HOME/.claude-custom:\$PATH\""
-    echo "  Use: claude or $tool_name"
+    echo ""
+    echo -e "${GREEN}Use right now:${NC}"
+    echo "  ~/.claude-custom/claude <args>"
+    echo ""
+    echo -e "${YELLOW}For convenience, add to PATH:${NC}"
+    echo "  export PATH=\"\$HOME/.claude-custom/bin:\$PATH\""
+    echo ""
+    echo "  Or add this alias to your ~/.zshrc:"
+    echo "  alias claude=~/.claude-custom/claude"
 }
 
 cmd_remove() {
