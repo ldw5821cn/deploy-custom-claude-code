@@ -17,6 +17,8 @@ claude-custom add glm
 claude-custom list
 ```
 
+**Upgrading from legacy script?** Run `claude-custom migrate` to import your existing deployments.
+
 ### Option 2: Direct Deployment Script (Legacy)
 
 See below for the traditional single-deployment script.
@@ -24,6 +26,8 @@ See below for the traditional single-deployment script.
 ## Using claude-custom
 
 The `claude-custom` tool allows you to manage multiple custom Claude deployments easily.
+
+**Note**: Tool names are automatically prefixed with `claude-`. For example, `doubao` becomes `claude-doubao`.
 
 ### Commands
 
@@ -42,6 +46,9 @@ claude-custom remove <name>
 
 # Migrate existing deployments
 claude-custom migrate
+
+# Show configuration location
+claude-custom config
 ```
 
 ### Examples
@@ -238,18 +245,48 @@ After deployment:
 
 - Node.js and npm (for installing Claude Code)
 - Bash shell
+- jq (JSON processor, for managing configurations)
 - Git (for cloning this repository)
 
 ## Notes
 
 - The original `claude` command continues to work with Claude Sonnet 4.5
 - Each custom tool has its own isolated configuration
-- Tool names are automatically prefixed with `claude-` if not provided
 - The script supports macOS and Linux
+- Configuration is stored in `~/.claude-custom/config.json`
 
 ## Troubleshooting
 
-### Command not found after deployment
+### claude-custom command not found
+
+```bash
+# Reload your shell configuration
+source ~/.zshrc  # or ~/.bashrc, ~/.bash_profile
+
+# Or restart your terminal
+```
+
+### Migration issues
+
+If you have existing deployments and they're not showing up:
+
+```bash
+# Run migration to import from legacy deployments
+claude-custom migrate
+
+# Check what was imported
+claude-custom list
+```
+
+### Configuration location
+
+Advanced users can directly edit the configuration file:
+```bash
+# Config location
+~/.claude-custom/config.json
+```
+
+### Legacy script troubleshooting
 
 ```bash
 # Reload your shell configuration
