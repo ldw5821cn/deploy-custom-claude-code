@@ -621,7 +621,93 @@ cmd_update() {
 }
 
 cmd_migrate() {
-    echo "TODO: Implement migrate command"
+    init_config
+    ensure_jq
+
+    # Find existing wrappers
+    local wrappers=()
+    if [ -d "$BIN_DIR" ]; then
+        while IFS= read -r -d '' wrapper; do
+            wrappers+=("$wrapper")
+        done < <(find "$BIN_DIR" -name "claude-*" -type f -print0 2>/dev/null)
+    fi
+
+    if [ ${#wrappers[@]} -eq 0 ]; then
+        echo -e "${YELLOW}No existing deployments found to migrate${NC}"
+        echo ""
+        echo "Add a deployment with:"
+        echo "  claude-custom add <name>"
+        return
+    fi
+
+    echo "Scanning for existing deployments..."
+    echo ""
+
+    local to_import=()
+
+    for wrapper in "${wrappers[@]}"; do
+        local name
+        name=$(basename "$wrapper" | sed 's/^claude-//')
+
+        # Skip if already in config
+        if deployment_exists "$name"; then
+            continue
+        fi
+
+        # Extract values from wrapper
+        local api_key
+        api_key=$(grep "export ANTHROPIC_AUTH_TOKEN=" "$wrapper" | cut -d'"' -f2)
+        local base_url
+        base_url=$(grep "export ANTHROPIC_BASE_URL=" "$wrapper" | cut -d'"' -f2)
+        local model
+        model=$(grep "export ANTHROPIC_MODEL=" "$wrapper" | cut -d'"' -f2)
+
+        # Validate we got the values
+        if [ -n "$api_key" ] && [ -n "$base_url" ] && [ -n "$model" ]; then
+            echo "  - claude-$name"
+            to_import+=("$name|$api_key|$base_url|$model")
+        fi
+    done
+
+    if [ ${#to_import[@]} -eq 0 ]; then
+        echo "No new deployments to migrate."
+        return
+    fi
+
+    echo ""
+    read -p "Import these deployments? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        return
+    fi
+
+    # Import each deployment
+    for entry in "${to_import[@]}"; do
+        IFS='|' read -r name api_key base_url model <<< "$entry"
+
+        if ! jq --arg name "$name" \
+           --arg api_key "$api_key" \
+           --arg base_url "$base_url" \
+           --arg model "$model" \
+           '.deployments[$name] = {api_key: $api_key, base_url: $base_url, model: $model}' \
+           "$CONFIG_FILE" > "$CONFIG_FILE.tmp"; then
+            echo -e "${RED}Error: Failed to import claude-$name${NC}" >&2
+            rm -f "$CONFIG_FILE.tmp"
+            continue
+        fi
+        if ! mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"; then
+            echo -e "${RED}Error: Failed to import claude-$name${NC}" >&2
+            rm -f "$CONFIG_FILE.tmp"
+            continue
+        fi
+
+        echo -e "${GREEN}✓ Imported claude-$name${NC}"
+    done
+
+    echo ""
+    echo "All deployments migrated!"
+    echo "Run 'claude-custom list' to see your deployments."
 }
 
 # Run main
