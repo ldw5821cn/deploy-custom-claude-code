@@ -546,6 +546,12 @@ cmd_update() {
     local basename
     basename=$(get_tool_basename "$tool_name")
 
+    # Validate tool name
+    if [[ ! "$tool_name" =~ ^claude-[a-zA-Z0-9-]+$ ]]; then
+        echo -e "${RED}Error: Tool name must start with 'claude-' and contain only letters, numbers, and hyphens${NC}"
+        exit 2
+    fi
+
     # Check if deployment exists
     if ! deployment_exists "$basename"; then
         echo -e "${RED}Error: Deployment '$tool_name' not found${NC}"
@@ -569,14 +575,29 @@ cmd_update() {
         new_api_key="${new_api_key:-$current_api_key}"
     fi
 
+    if [ -z "$new_api_key" ]; then
+        echo -e "${RED}Error: API Key cannot be empty${NC}"
+        exit 2
+    fi
+
     if [ -z "$new_base_url" ]; then
         read -p "Base URL [$current_base_url]: " new_base_url
         new_base_url="${new_base_url:-$current_base_url}"
     fi
 
+    if [ -z "$new_api_key" ]; then
+        echo -e "${RED}Error: API Key cannot be empty${NC}"
+        exit 2
+    fi
+
     if [ -z "$new_model" ]; then
         read -p "Model [$current_model]: " new_model
         new_model="${new_model:-$current_model}"
+    fi
+
+    if [ -z "$new_api_key" ]; then
+        echo -e "${RED}Error: API Key cannot be empty${NC}"
+        exit 2
     fi
 
     # Validate URL if changed
