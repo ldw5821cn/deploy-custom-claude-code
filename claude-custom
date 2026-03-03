@@ -938,10 +938,22 @@ cmd_self_update() {
         exit 1
     fi
 
-    # Download URL
+    # Get latest release tag from GitHub API
     local repo="${REPO:-SSBun/deploy-custom-claude-code}"
-    local branch="${BRANCH:-main}"
-    local download_url="https://raw.githubusercontent.com/$repo/$branch/claude-custom"
+    echo "Checking for latest release..."
+    local latest_tag
+    latest_tag=$(curl -fsSL "https://api.github.com/repos/$repo/releases/latest" 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | cut -d'"' -f4)
+
+    if [ -z "$latest_tag" ]; then
+        echo -e "${YELLOW}Warning: Could not fetch latest tag, falling back to main branch${NC}"
+        latest_tag="main"
+    fi
+
+    echo "Latest release: $latest_tag"
+    echo ""
+
+    # Download URL using the tag
+    local download_url="https://raw.githubusercontent.com/$repo/$latest_tag/claude-custom"
 
     echo "Downloading from: $download_url"
     echo ""
