@@ -2,6 +2,67 @@
 
 A generic deployment script for setting up Claude Code with custom Claude-compatible models (Doubao, GLM, MiniMax, etc.).
 
+## Quick Start
+
+### Option 1: Using claude-custom (Recommended)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SSBun/deploy-custom-claude-code/main/install.sh | sudo bash
+```
+
+Then add deployments:
+```bash
+claude-custom add doubao
+claude-custom add glm
+claude-custom list
+```
+
+### Option 2: Direct Deployment Script (Legacy)
+
+See below for the traditional single-deployment script.
+
+## Using claude-custom
+
+The `claude-custom` tool allows you to manage multiple custom Claude deployments easily.
+
+### Commands
+
+```bash
+# Add a new deployment
+claude-custom add <name> [--api-key KEY] [--base-url URL] [--model MODEL]
+
+# List all deployments
+claude-custom list
+
+# Update a deployment
+claude-custom update <name> [--api-key KEY] [--base-url URL] [--model MODEL]
+
+# Remove a deployment
+claude-custom remove <name>
+
+# Migrate existing deployments
+claude-custom migrate
+```
+
+### Examples
+
+```bash
+# Interactive add
+claude-custom add doubao
+
+# Non-interactive add
+claude-custom add glm --api-key YOUR_KEY --base-url https://open.bigmodel.cn/api/paas/v4 --model glm-4-6
+
+# List all
+claude-custom list
+
+# Update API key
+claude-custom update doubao --api-key NEW_KEY
+
+# Remove
+claude-custom remove glm
+```
+
 ## Features
 
 - 🚀 **Easy Deployment**: Deploy custom Claude-compatible models in minutes
@@ -11,7 +72,7 @@ A generic deployment script for setting up Claude Code with custom Claude-compat
 - ✅ **Validation**: Ensures tool names follow `claude-xxx` naming convention
 - 📝 **Interactive & Non-Interactive**: Supports both interactive prompts and command-line arguments
 
-## Quick Start
+## Alternative: Direct Deployment Script
 
 ### One-Line Installation
 
