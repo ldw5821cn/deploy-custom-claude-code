@@ -334,16 +334,12 @@ cmd_add() {
     fi
 
     # Check if deployment exists
-    if deployment_exists "$(get_tool_basename "$tool_name")"; then
+    local basename
+    basename=$(get_tool_basename "$tool_name")
+    if deployment_exists "$basename"; then
         echo -e "${YELLOW}Deployment '$tool_name' already exists${NC}"
-        read -p "Update instead? (y/n) " -n 1 -r
-        echo
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
-            cmd_update "$tool_name" --api-key "${api_key:-}" --base-url "${base_url:-}" --model "${model:-}"
-            return
-        else
-            exit 1
-        fi
+        echo -e "${YELLOW}Use 'claude-custom update $basename' to modify it${NC}"
+        exit 1
     fi
 
     # Get API key
