@@ -62,7 +62,9 @@ ensure_jq() {
 # Check if a deployment exists
 deployment_exists() {
     local name="$1"
-    jq --arg name "$name" -e '.deployments[$name]' "$CONFIG_FILE" &> /dev/null || true
+    local result
+    result=$(jq --arg name "$name" -e '.deployments[$name]' "$CONFIG_FILE" 2>/dev/null)
+    [ "$result" != "null" ] && [ -n "$result" ]
 }
 
 # Get deployment config
@@ -274,11 +276,136 @@ show_version() {
     echo "claude-custom $VERSION"
 }
 
-# Command stubs (to be implemented)
+# Command implementations
 cmd_add() {
-    echo "TODO: Implement add command"
+    local tool_name=""
+    local api_key=""
+    local base_url=""
+    local model=""
+
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --api-key|-k)
+                api_key="$2"
+                shift 2
+                ;;
+            --base-url|-u)
+                base_url="$2"
+                shift 2
+                ;;
+            --model|-m)
+                model="$2"
+                shift 2
+                ;;
+            *)
+                if [ -z "$tool_name" ]; then
+                    tool_name="$1"
+                else
+                    echo -e "${RED}Unknown option: $1${NC}"
+                    exit 2
+                fi
+                shift
+                ;;
+        esac
+    done
+
+    # Initialize
+    init_config
+    ensure_jq
+    ensure_claude_code
+
+    # Get tool name
+    if [ -z "$tool_name" ]; then
+        read -p "Tool name: " tool_name
+        if [ -z "$tool_name" ]; then
+            echo -e "${RED}Error: Tool name is required${NC}"
+            exit 2
+        fi
+    fi
+
+    # Normalize tool name
+    tool_name=$(normalize_tool_name "$tool_name")
+
+    # Validate tool name
+    if [[ ! "$tool_name" =~ ^claude-[a-zA-Z0-9-]+$ ]]; then
+        echo -e "${RED}Error: Tool name must start with 'claude-' and contain only letters, numbers, and hyphens${NC}"
+        exit 2
+    fi
+
+    # Check if deployment exists
+    if deployment_exists "$(get_tool_basename "$tool_name")"; then
+        echo -e "${YELLOW}Deployment '$tool_name' already exists${NC}"
+        read -p "Update instead? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            cmd_update "$tool_name" --api-key "${api_key:-}" --base-url "${base_url:-}" --model "${model:-}"
+            return
+        else
+            exit 1
+        fi
+    fi
+
+    # Get API key
+    if [ -z "$api_key" ]; then
+        read -p "API Key: " api_key
+        if [ -z "$api_key" ]; then
+            echo -e "${RED}Error: API Key is required${NC}"
+            exit 2
+        fi
+    fi
+
+    # Get base URL
+    if [ -z "$base_url" ]; then
+        read -p "Base URL: " base_url
+        if [ -z "$base_url" ]; then
+            echo -e "${RED}Error: Base URL is required${NC}"
+            exit 2
+        fi
+    fi
+
+    # Validate URL
+    if ! validate_url "$base_url"; then
+        exit 2
+    fi
+
+    # Get model name
+    if [ -z "$model" ]; then
+        read -p "Model name: " model
+        if [ -z "$model" ]; then
+            echo -e "${RED}Error: Model name is required${NC}"
+            exit 2
+        fi
+    fi
+
+    # Create bin directory
+    mkdir -p "$BIN_DIR"
+
+    # Write wrapper script
+    write_wrapper_script "$tool_name" "$api_key" "$base_url" "$model"
+
+    # Save to config
+    local basename=$(get_tool_basename "$tool_name")
+    jq --arg name "$basename" \
+       --arg api_key "$api_key" \
+       --arg base_url "$base_url" \
+       --arg model "$model" \
+       '.deployments[$name] = {api_key: $api_key, base_url: $base_url, model: $model}' \
+       "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && \
+    mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+
+    # Configure PATH
+    configure_path
+
+    # Create tool config directory
+    mkdir -p "$CLAUDE_MODEL_DIR/.$tool_name"
+
+    echo -e "${GREEN}✓ Added $tool_name${NC}"
+    echo "  Run: source ~/.zshrc  # or your shell config"
+    echo "  Use: $tool_name"
 }
 
+# Remaining command stubs (to be implemented)
 cmd_remove() {
     echo "TODO: Implement remove command"
 }
