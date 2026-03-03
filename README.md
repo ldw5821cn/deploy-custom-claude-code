@@ -17,8 +17,6 @@ claude-custom add glm
 claude-custom list
 ```
 
-**Upgrading from legacy script?** Run `claude-custom migrate` to import your existing deployments.
-
 ### Option 2: Direct Deployment Script (Legacy)
 
 See below for the traditional single-deployment script.
@@ -43,9 +41,6 @@ claude-custom update <name> [--api-key KEY] [--base-url URL] [--model MODEL]
 
 # Remove a deployment
 claude-custom remove <name>
-
-# Migrate existing deployments
-claude-custom migrate
 
 # Show configuration location
 claude-custom config
@@ -267,16 +262,6 @@ source ~/.zshrc  # or ~/.bashrc, ~/.bash_profile
 ```
 
 ### Migration issues
-
-If you have existing deployments and they're not showing up:
-
-```bash
-# Run migration to import from legacy deployments
-claude-custom migrate
-
-# Check what was imported
-claude-custom list
-```
 
 ### Configuration location
 
