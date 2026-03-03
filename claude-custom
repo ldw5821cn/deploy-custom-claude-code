@@ -401,9 +401,58 @@ cmd_add() {
     echo "  Use: $tool_name"
 }
 
-# Remaining command stubs (to be implemented)
 cmd_remove() {
-    echo "TODO: Implement remove command"
+    local tool_name="$1"
+
+    if [ -z "$tool_name" ]; then
+        echo -e "${RED}Error: Tool name is required${NC}"
+        echo "Usage: claude-custom remove <name>"
+        exit 2
+    fi
+
+    init_config
+    ensure_jq
+
+    # Normalize tool name
+    tool_name=$(normalize_tool_name "$tool_name")
+    local basename
+    basename=$(get_tool_basename "$tool_name")
+
+    # Check if deployment exists
+    if ! deployment_exists "$basename"; then
+        echo -e "${RED}Error: Deployment '$tool_name' not found${NC}"
+        echo ""
+        echo "Run 'claude-custom list' to see available deployments"
+        exit 1
+    fi
+
+    # Confirm removal
+    read -p "Remove $tool_name? (y/n) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborted."
+        exit 0
+    fi
+
+    # Remove wrapper script
+    local wrapper_path="$BIN_DIR/$tool_name"
+    if [ -f "$wrapper_path" ]; then
+        rm -f "$wrapper_path"
+        echo -e "${GREEN}✓ Removed wrapper script${NC}"
+    fi
+
+    # Remove config directory
+    local config_path="$CLAUDE_MODEL_DIR/.$tool_name"
+    if [ -d "$config_path" ]; then
+        rm -rf "$config_path"
+        echo -e "${GREEN}✓ Removed config directory${NC}"
+    fi
+
+    # Remove from config
+    jq --arg name "$basename" 'del(.deployments[$name])' "$CONFIG_FILE" > "$CONFIG_FILE.tmp" && \
+    mv "$CONFIG_FILE.tmp" "$CONFIG_FILE"
+
+    echo -e "${GREEN}✓ Removed $tool_name${NC}"
 }
 
 cmd_list() {
