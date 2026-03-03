@@ -21,6 +21,56 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# Initialize configuration directory and file
+init_config() {
+    if [ ! -d "$CONFIG_DIR" ]; then
+        mkdir -p "$CONFIG_DIR"
+        echo -e "${GREEN}✓ Created config directory: $CONFIG_DIR${NC}"
+    fi
+
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo '{"deployments":{}}' > "$CONFIG_FILE"
+        echo -e "${GREEN}✓ Created config file: $CONFIG_FILE${NC}"
+    fi
+}
+
+# Ensure jq is installed
+ensure_jq() {
+    if ! command -v jq &> /dev/null; then
+        echo -e "${YELLOW}jq is required but not installed.${NC}"
+        if [[ "$OSTYPE" == "darwin"* ]]; then
+            echo "Install with: brew install jq"
+        else
+            echo "Install with: sudo apt-get install jq"
+        fi
+        read -p "Install now? (y/n) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                brew install jq
+            else
+                sudo apt-get install -y jq
+            fi
+            echo -e "${GREEN}✓ Installed jq${NC}"
+        else
+            echo -e "${RED}jq is required. Exiting.${NC}"
+            exit 5
+        fi
+    fi
+}
+
+# Check if a deployment exists
+deployment_exists() {
+    local name="$1"
+    jq -e ".deployments.\"$name\"" "$CONFIG_FILE" &> /dev/null
+}
+
+# Get deployment config
+get_deployment() {
+    local name="$1"
+    jq -r ".deployments.\"$name\"" "$CONFIG_FILE"
+}
+
 # Main entry point
 main() {
     local command="$1"
