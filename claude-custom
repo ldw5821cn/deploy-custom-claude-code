@@ -71,6 +71,102 @@ get_deployment() {
     jq --arg name "$name" -r '.deployments[$name]' "$CONFIG_FILE"
 }
 
+# Normalize tool name to ensure it starts with "claude-"
+normalize_tool_name() {
+    local name="$1"
+    name=$(echo "$name" | xargs)
+    if [[ ! "$name" =~ ^claude- ]]; then
+        name="claude-$name"
+    fi
+    name=$(echo "$name" | sed 's/^claude-claude-/claude-/')
+    echo "$name"
+}
+
+# Extract base name from tool name (remove claude- prefix)
+get_tool_basename() {
+    local name="$1"
+    echo "$name" | sed 's/^claude-//'
+}
+
+# Validate URL format
+validate_url() {
+    local url="$1"
+    if [[ ! "$url" =~ ^https?:// ]]; then
+        echo -e "${RED}Error: URL must start with http:// or https://${NC}"
+        return 1
+    fi
+    return 0
+}
+
+# Ensure Claude Code is installed
+ensure_claude_code() {
+    if [ ! -f "$CLAUDE_MODEL_DIR/node_modules/.bin/claude" ]; then
+        echo -e "${YELLOW}Claude Code not found. Installing...${NC}"
+        mkdir -p "$CLAUDE_MODEL_DIR"
+        cd "$CLAUDE_MODEL_DIR"
+
+        if [ ! -f "package.json" ]; then
+            npm init -y > /dev/null 2>&1
+        fi
+
+        npm install @anthropic-ai/claude-code
+        echo -e "${GREEN}✓ Installed Claude Code${NC}"
+    fi
+}
+
+# Configure PATH for the user's shell
+configure_path() {
+    # Detect shell (reuse logic from deploy-claude-custom.sh)
+    local detected_shell=""
+    local shell_rc=""
+
+    if [ -n "$SHELL" ]; then
+        detected_shell=$(basename "$SHELL")
+    fi
+
+    if [ -z "$detected_shell" ] && command -v ps >/dev/null 2>&1; then
+        detected_shell=$(ps -p $$ -o comm= 2>/dev/null | xargs basename 2>/dev/null || echo "")
+    fi
+
+    case "$detected_shell" in
+        zsh)
+            SHELL_RC="$HOME/.zshrc"
+            ;;
+        bash)
+            if [[ "$OSTYPE" == "darwin"* ]]; then
+                SHELL_RC="$HOME/.bash_profile"
+                [ ! -f "$SHELL_RC" ] && SHELL_RC="$HOME/.bashrc"
+            else
+                SHELL_RC="$HOME/.bashrc"
+                [ ! -f "$SHELL_RC" ] && SHELL_RC="$HOME/.bash_profile"
+            fi
+            ;;
+        fish)
+            SHELL_RC="$HOME/.config/fish/config.fish"
+            ;;
+        *)
+            SHELL_RC="$HOME/.zshrc"
+            ;;
+    esac
+
+    local path_line='export PATH="$HOME/claude-model/bin:$PATH"'
+
+    if [ "$detected_shell" = "fish" ]; then
+        path_line='set -gx PATH $HOME/claude-model/bin $PATH'
+        mkdir -p "$(dirname "$SHELL_RC")"
+    fi
+
+    [ ! -f "$SHELL_RC" ] && touch "$SHELL_RC"
+
+    if ! grep -q "claude-model/bin" "$SHELL_RC" 2>/dev/null; then
+        echo "" >> "$SHELL_RC"
+        echo "# Claude Custom Models" >> "$SHELL_RC"
+        echo "$path_line" >> "$SHELL_RC"
+        echo -e "${GREEN}✓ Added to PATH in $SHELL_RC${NC}"
+        echo -e "${YELLOW}Run: source $SHELL_RC${NC}"
+    fi
+}
+
 # Main entry point
 main() {
     local command="$1"
