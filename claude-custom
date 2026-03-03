@@ -237,6 +237,9 @@ main() {
         upgrade)
             cmd_upgrade "$@"
             ;;
+        self-update)
+            cmd_self_update "$@"
+            ;;
         --help|-h|"")
             show_help
             ;;
@@ -258,11 +261,12 @@ claude-custom - Manage custom Claude Code deployments
 Usage: claude-custom <command> [options]
 
 Commands:
-  add      Add a new custom model deployment
-  remove   Remove a deployment
-  list     List all deployments
-  update   Update a deployment configuration
-  upgrade  Upgrade Claude Code to latest version
+  add          Add a new custom model deployment
+  remove       Remove a deployment
+  list         List all deployments
+  update       Update a deployment configuration
+  upgrade      Upgrade Claude Code to latest version
+  self-update  Update claude-custom itself
 
 Options:
   --help, -h     Show this help message
@@ -354,6 +358,20 @@ Examples:
   claude-custom upgrade
   claude-custom upgrade --latest
   claude-custom upgrade doubao
+EOF
+}
+
+show_self_update_help() {
+    cat << EOF
+Update claude-custom itself
+
+Usage: claude-custom self-update
+
+Downloads the latest version of claude-custom from GitHub and
+replaces the current installation.
+
+Examples:
+  claude-custom self-update
 EOF
 }
 
@@ -880,6 +898,116 @@ cmd_upgrade() {
 
     echo ""
     echo "Total: $count deployment(s)"
+}
+
+cmd_self_update() {
+    # Check for help flag
+    if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+        show_self_update_help
+        exit 0
+    fi
+
+    # Get current version
+    local current_version="$VERSION"
+
+    echo "Updating claude-custom..."
+    echo ""
+    echo "Current version: $current_version"
+    echo ""
+
+    # Determine script location
+    local script_path=""
+    if [ -L "$0" ]; then
+        # Script is a symlink, get the real path
+        script_path=$(readlink -f "$0" 2>/dev/null || readlink "$0" 2>/dev/null)
+    else
+        script_path="$0"
+    fi
+
+    if [ ! -f "$script_path" ]; then
+        echo -e "${RED}Error: Cannot determine script location${NC}"
+        exit 1
+    fi
+
+    # Check if we can write to the script location
+    if [ ! -w "$script_path" ]; then
+        echo -e "${YELLOW}Warning: No write permission to $script_path${NC}"
+        echo ""
+        echo "Try running with sudo:"
+        echo "  sudo claude-custom self-update"
+        exit 1
+    fi
+
+    # Download URL
+    local repo="${REPO:-SSBun/deploy-custom-claude-code}"
+    local branch="${BRANCH:-main}"
+    local download_url="https://raw.githubusercontent.com/$repo/$branch/claude-custom"
+
+    echo "Downloading from: $download_url"
+    echo ""
+
+    # Download to temp file
+    local temp_file="/tmp/claude-custom.tmp"
+    if ! curl -fsSL "$download_url" -o "$temp_file" 2>&1; then
+        echo -e "${RED}Error: Failed to download update${NC}"
+        rm -f "$temp_file"
+        exit 1
+    fi
+
+    # Verify the downloaded file is not empty
+    if [ ! -s "$temp_file" ]; then
+        echo -e "${RED}Error: Downloaded file is empty${NC}"
+        rm -f "$temp_file"
+        exit 1
+    fi
+
+    # Extract version from downloaded file
+    local new_version
+    new_version=$(grep "^VERSION=" "$temp_file" | head -1 | cut -d'"' -f2)
+
+    if [ -z "$new_version" ]; then
+        echo -e "${YELLOW}Warning: Could not determine new version${NC}"
+        new_version="unknown"
+    fi
+
+    echo "New version: $new_version"
+    echo ""
+
+    # Check if already up to date
+    if [ "$current_version" == "$new_version" ]; then
+        echo "Already up to date!"
+        rm -f "$temp_file"
+        return 0
+    fi
+
+    # Backup current script
+    local backup_file="${script_path}.backup"
+    echo "Backing up current script to: $backup_file"
+    cp "$script_path" "$backup_file"
+
+    # Replace with new version
+    echo "Installing new version..."
+    if ! mv "$temp_file" "$script_path"; then
+        echo -e "${RED}Error: Failed to install update${NC}"
+        echo "Restoring backup..."
+        mv "$backup_file" "$script_path"
+        rm -f "$temp_file"
+        exit 1
+    fi
+
+    # Make sure it's executable
+    chmod +x "$script_path"
+
+    rm -f "$backup_file"
+
+    echo ""
+    echo -e "${GREEN}✓ Updated successfully!${NC}"
+    echo ""
+    echo "Changes:"
+    echo "  Previous version: $current_version"
+    echo "  New version:      $new_version"
+    echo ""
+    echo "Run 'claude-custom --help' to see new features."
 }
 
 # Run main
