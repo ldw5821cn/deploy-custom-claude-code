@@ -585,19 +585,9 @@ cmd_update() {
         new_base_url="${new_base_url:-$current_base_url}"
     fi
 
-    if [ -z "$new_api_key" ]; then
-        echo -e "${RED}Error: API Key cannot be empty${NC}"
-        exit 2
-    fi
-
     if [ -z "$new_model" ]; then
         read -p "Model [$current_model]: " new_model
         new_model="${new_model:-$current_model}"
-    fi
-
-    if [ -z "$new_api_key" ]; then
-        echo -e "${RED}Error: API Key cannot be empty${NC}"
-        exit 2
     fi
 
     # Validate URL if changed
