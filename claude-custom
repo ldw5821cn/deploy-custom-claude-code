@@ -123,7 +123,14 @@ is_legacy_deployment() {
 migrate_deployment_to_multi() {
     local name="$1"
     local current_model
-    current_model=$(jq -r ".deployments[$name].model" "$CONFIG_FILE")
+    current_model=$(jq -r --arg name "$name" '.deployments[$name].model' "$CONFIG_FILE")
+
+    # Check if model is empty or null
+    if [ -z "$current_model" ] || [ "$current_model" = "null" ]; then
+        echo -e "${RED}Error: No model found in deployment${NC}" >&2
+        return 1
+    fi
+
     if ! jq --arg name "$name" --arg model "$current_model" \
         '.deployments[$name].models = [$model] | .deployments[$name].default_model = $model | del(.deployments[$name].model)' \
         "$CONFIG_FILE" > "$CONFIG_FILE.tmp"; then
@@ -1240,7 +1247,7 @@ cmd_models() {
         local count=0
         while IFS= read -r model; do
             if [ "$model" = "$default_model" ]; then
-                echo "  * $model ${GREEN}(default)${NC}"
+                echo -e "  * $model ${GREEN}(default)${NC}"
             else
                 echo "    $model"
             fi
