@@ -31,13 +31,19 @@ The `claude-custom` tool allows you to manage multiple custom Claude deployments
 
 ```bash
 # Add a new deployment
-claude-custom add <name> [--api-key KEY] [--base-url URL] [--model MODEL]
+claude-custom add <name> [options]
 
 # List all deployments
 claude-custom list
 
+# Manage models for a deployment
+claude-custom models <name>                    # List all models
+claude-custom models <name> --default MODEL    # Set default model
+claude-custom models <name> --add MODEL        # Add a model
+claude-custom models <name> --remove MODEL     # Remove a model
+
 # Update a deployment
-claude-custom update <name> [--api-key KEY] [--base-url URL] [--model MODEL]
+claude-custom update <name> [options]
 
 # Remove a deployment
 claude-custom remove <name>
@@ -71,17 +77,53 @@ claude-custom uninstall --all    # Remove everything
 claude-custom self-update
 ```
 
+### Multi-Model Support
+
+Each deployment can now support multiple models with runtime model selection.
+
+```bash
+# Add deployment with multiple models
+claude-custom add glm --models "glm-4,glm-4-plus,glm-4-6" --default-model glm-4
+
+# Or use multiple --model flags
+claude-custom add glm --model glm-4 --model glm-4-plus --model glm-4-6 --default-model glm-4
+
+# List models for a deployment
+claude-custom models glm
+
+# Add a new model to existing deployment
+claude-custom models glm --add glm-4-32k
+
+# Remove a model
+claude-custom models glm --remove glm-4-32k
+
+# Set a different default model
+claude-custom models glm --default glm-4-6
+
+# Use a specific model at runtime
+claude-glm --use-model glm-4-6
+
+# Or use environment variable
+CLAUDE_MODEL=glm-4-6 claude-glm
+```
+
 ### Examples
 
 ```bash
 # Interactive add
 claude-custom add doubao
 
-# Non-interactive add
+# Non-interactive add with single model
 claude-custom add glm --api-key YOUR_KEY --base-url https://open.bigmodel.cn/api/paas/v4 --model glm-4-6
 
-# List all deployments with versions
+# Non-interactive add with multiple models
+claude-custom add glm --api-key YOUR_KEY --base-url https://open.bigmodel.cn/api/paas/v4 --models "glm-4,glm-4-plus,glm-4-6"
+
+# List all deployments with model counts
 claude-custom list
+
+# Show models for a deployment
+claude-custom models glm
 
 # Test a specific deployment
 claude-custom test doubao
@@ -90,7 +132,16 @@ claude-custom test doubao
 claude-custom test --all
 
 # Update API key
-claude-custom update doubao --api-key NEW_KEY
+claude-custom update glm --api-key NEW_KEY
+
+# Add a model to existing deployment
+claude-custom update glm --add-model glm-4-flash
+
+# Remove a model
+claude-custom update glm --remove-model glm-4-flash
+
+# Change default model
+claude-custom update glm --default-model glm-4-6
 
 # Export configuration
 claude-custom export > backup.json
@@ -113,6 +164,7 @@ claude-custom remove glm
 - 🚀 **Easy Deployment**: Deploy custom Claude-compatible models in minutes
 - 🔧 **Generic & Flexible**: Works with any Claude-compatible API
 - 🎯 **Multiple Models**: Deploy multiple models simultaneously (e.g., `claude-doubao`, `claude-glm`, `claude-kimi`)
+- 🔄 **Multi-Model Support**: Each deployment can have multiple models with runtime selection
 - 🐚 **Smart Shell Detection**: Automatically detects and configures your shell (zsh, bash, fish)
 - ✅ **Validation**: Ensures tool names follow `claude-xxx` naming convention
 - 📝 **Interactive & Non-Interactive**: Supports both interactive prompts and command-line arguments
@@ -207,8 +259,14 @@ source ~/.zshrc  # or ~/.bashrc, ~/.bash_profile, etc.
 Then use your custom tool:
 
 ```bash
-claude-doubao --version
-claude-doubao  # Start Claude Code with Doubao model
+claude-glm --version
+claude-glm  # Start Claude Code with default model
+
+# Use a specific model (if deployment has multiple models)
+claude-glm --use-model glm-4-6
+
+# Or use environment variable
+CLAUDE_MODEL=glm-4-6 claude-glm
 ```
 
 ## Deploying Multiple Models
@@ -232,6 +290,41 @@ Each tool will have its own:
 - Independent configuration
 
 ## Command-Line Options
+
+### claude-custom add
+
+```
+Options:
+  --api-key, -k KEY       API Key for the model provider
+  --base-url, -u URL      Base URL for the API endpoint
+  --model, -m MODEL       Model name to use (can be specified multiple times)
+  --models LIST           Comma-separated list of models
+  --default-model NAME    Default model to use (defaults to first model)
+```
+
+### claude-custom update
+
+```
+Options:
+  --api-key, -k KEY       New API key
+  --base-url, -u URL      New base URL
+  --model, -m MODEL       New model name (replaces all models)
+  --add-model MODEL       Add a model to existing models
+  --remove-model MODEL    Remove a model from the list
+  --default-model NAME    Set default model
+```
+
+### claude-custom models
+
+```
+Actions:
+  (none)                  List all models for the deployment
+  --default NAME          Set the default model
+  --add NAME              Add a new model
+  --remove NAME           Remove a model
+```
+
+### Legacy Script Options
 
 ```
 Options:
@@ -262,19 +355,24 @@ MODEL=glm-4-6 \
 1. **Creates Project Structure**: Sets up `~/claude-model/` directory
 2. **Installs Claude Code**: Installs `@anthropic-ai/claude-code` via npm
 3. **Creates Wrapper Script**: Generates a custom wrapper script with your API settings
-4. **Configures PATH**: Automatically adds `~/claude-model/bin` to your PATH
-5. **Shell Detection**: Detects your shell (zsh, bash, fish) and configures the appropriate config file
+4. **Multi-Model Support**: Wrapper scripts support `--use-model` flag for runtime model selection
+5. **Configures PATH**: Automatically adds `~/.claude-custom/bin` to your PATH
+6. **Shell Detection**: Detects your shell (zsh, bash, fish) and configures the appropriate config file
 
 ## Directory Structure
 
 After deployment:
 
 ```
-~/claude-model/
+~/.claude-custom/
 ├── bin/
 │   ├── claude-doubao      # Your custom tool
 │   ├── claude-glm         # Another custom tool
 │   └── ...
+├── claude                 # Default alias script
+└── config.json            # Deployment configurations
+
+~/claude-model/
 ├── .claude-doubao/        # Config for claude-doubao
 ├── .claude-glm/           # Config for claude-glm
 ├── node_modules/
@@ -293,9 +391,12 @@ After deployment:
 ## Notes
 
 - The original `claude` command continues to work with Claude Sonnet 4.5
+- Each deployment can now have multiple models with runtime selection via `--use-model` flag or `CLAUDE_MODEL` environment variable
 - Each custom tool has its own isolated configuration
 - The script supports macOS and Linux
 - Configuration is stored in `~/.claude-custom/config.json`
+- Wrapper scripts are stored in `~/.claude-custom/bin/`
+- Legacy single-model deployments are auto-migrated to multi-model format on first use
 
 ## Troubleshooting
 
