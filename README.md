@@ -2,6 +2,8 @@
 
 A generic deployment script for setting up Claude Code with custom Claude-compatible models (Doubao, GLM, MiniMax, etc.).
 
+**[中文文档](README.zh-CN.md)**
+
 ## Quick Start
 
 ### Option 1: Using claude-custom (Recommended)
