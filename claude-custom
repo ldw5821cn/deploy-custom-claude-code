@@ -5,7 +5,7 @@
 set -e  # Exit on error
 
 # Version
-VERSION="1.0.3"
+VERSION="1.0.4"
 
 # Configuration
 CONFIG_DIR="$HOME/.claude-custom"
@@ -14,12 +14,12 @@ CLAUDE_MODEL_DIR="$HOME/claude-model"
 BIN_DIR="$CONFIG_DIR/bin"
 
 # Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-CYAN='\033[0;36m'
-NC='\033[0m' # No Color
+RED=$'\033[0;31m'
+GREEN=$'\033[0;32m'
+YELLOW=$'\033[1;33m'
+BLUE=$'\033[0;34m'
+CYAN=$'\033[0;36m'
+NC=$'\033[0m' # No Color
 
 # Initialize configuration directory and file
 init_config() {
